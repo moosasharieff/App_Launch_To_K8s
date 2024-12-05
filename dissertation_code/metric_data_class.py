@@ -7,6 +7,8 @@ cluster.
 from bs4 import BeautifulSoup
 import requests
 import json
+import pytz
+from datetime import datetime
 
 
 class Metric_Data:
@@ -14,12 +16,24 @@ class Metric_Data:
     of the Pods."""
     NAME = set()
     CPU = {}
-    MEMORY = {}
     DATETIME = {}
-    DATATIME_LIST = {}
+    DATETIME_LIST = []
+
+    def append_datetime_list(self, dt):
+        val = self._convert_dub_datetime(dt)
+        self.DATETIME_LIST.append(val)
+        self.DATETIME_LIST.sort()
+
+    def _convert_dub_datetime(self, dt):
+        utc_time = datetime.strptime(dt, '%Y-%m-%dT%H:%M:%SZ')
+        utc_zone = pytz.utc
+        utc_time = utc_zone.localize(utc_time)
+        dublin_zone = pytz.timezone('Europe/Dublin')
+        dublin_time = utc_time.astimezone(dublin_zone)
+        return dublin_time.strftime('%Y-%m-%d %H:%M:%S %Z%z')
 
 
-class MetricsCollector(Metric_Data):
+class Metrics_Collector(Metric_Data):
     """This class collects various information from
     the exposed Metrics Service of Kubernetes cluster."""
 
