@@ -48,3 +48,43 @@ class Metrics_Collector(Metric_Data):
         json_response = json.loads(soup.text)
 
         return json_response['items']
+
+
+class Pod_CPU_Collector(Metric_Data):
+    """This method communicates with Metrics Service URL
+    and Inherited cls: Metric_Data to store values."""
+
+    def __init__(self):
+        super().__init__()
+
+    def extract(self, metrics: json) -> int:
+        """Collects all the CPU Metrics of the pods from the provided
+        json response."""
+
+        n = len(metrics)
+        values = []
+
+        for i in range(n):
+            pod_metrics = metrics[i]
+            name = pod_metrics['metadata']['name']
+            cpu = pod_metrics['containers'][0]['usage']['cpu']
+
+            values.append((name, cpu))
+
+        return values
+
+    def get(self, pod_name: str) -> str:
+        """Return CPU value for the pod name else raise KeyError."""
+        if pod_name not in self.CPU:
+            raise KeyError(f"Pod name '{pod_name}' not found in CPU Storage.")
+        return self.CPU.get(pod_name)
+
+
+    def add(self, pod_name: str, cpu_val: int) -> None:
+        """Add the collected pod name and cpu value to
+        cls: Metric_Data()
+        """
+        self.CPU[pod_name] = cpu_val
+
+    def remove(self, pod_name: str) -> None:
+        self.CPU.pop(pod_name)
