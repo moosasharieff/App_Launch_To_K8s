@@ -18,7 +18,7 @@ class Metric_Data:
     of the Pods."""
     NAME = set()
     CPU = {}
-    DATETIME = {}
+    CREATION_DATETIME = {}
     DATETIME_LIST = []
 
     def append_datetime_list(self, dt):
@@ -99,8 +99,8 @@ class Pod_NAME_Collector(Metric_Data):
         super().__init__()
 
     def extract(self, metrics: json) -> int:
-        """Collects all the Name value from Metrics of the pods from the provided
-        json response."""
+        """Collects all the Name value from Metrics
+        of the pods from the provided json response."""
 
         n = len(metrics)
         values = []
@@ -115,9 +115,9 @@ class Pod_NAME_Collector(Metric_Data):
 
     def add(self, pod_name) -> None:
         """Adds Pod names in memory"""
-        # raise AlreadyExistsError(f"{pod_name} is already present in collection.")
         if pod_name in self.NAME:
-            raise AlreadyExistsError('')
+            raise AlreadyExistsError(f"{pod_name} is already present "
+                                     f"in self.NAME collection.")
         self.NAME.add(pod_name)
 
     def is_present(self, pod_name: str) -> bool:
@@ -128,3 +128,46 @@ class Pod_NAME_Collector(Metric_Data):
     def remove(self, pod_name: str) -> None:
         """Removes pods name from collection."""
         return self.NAME.remove(pod_name)
+
+
+class Pod_Datetime_Collector(Metric_Data):
+    """This method communicates with Metrics Service URL
+        and Inherited cls: Metric_Data to store values."""
+
+    def __init__(self):
+        super().__init__()
+
+    def extract(self, metrics: json) -> int:
+        """Collects all the CPU Metrics of the pods from the provided
+        json response."""
+
+        n = len(metrics)
+        values = []
+
+        for i in range(n):
+            pod_metrics = metrics[i]['metadata']
+            name = pod_metrics['name']
+            dt = pod_metrics['creationTimestamp']
+
+            values.append((name, dt))
+
+        return values
+
+    def add(self, pod_name: str, pod_creation_dt: str) -> None:
+        """Adds Pod names in memory"""
+        if pod_name in self.CREATION_DATETIME:
+            raise AlreadyExistsError(f"{pod_name} already exists "
+                                     f"in self.CREATION_DATETIME collection.")
+        self.CREATION_DATETIME[pod_name] = pod_creation_dt
+
+    def get(self, pod_name: str) -> str:
+        """Return datetime value from self.CREATION_DATETIME"""
+        return self.CREATION_DATETIME.get(pod_name)
+
+    def is_present(self, pod_name: str) -> bool:
+        """Checks Pod name in self.CREATION_DATETIME and return bool."""
+        return pod_name in self.CREATION_DATETIME
+
+    def remove(self, pod_name: str) -> None:
+        """Removes pods name from collection."""
+        self.CREATION_DATETIME.pop(pod_name)

@@ -3,7 +3,8 @@ from unittest import skip  # noqa
 
 from custom_exceptions import AlreadyExistsError
 from metric_data_class import (Metric_Data, Metrics_Collector,
-                               Pod_CPU_Collector, Pod_NAME_Collector)
+                               Pod_CPU_Collector, Pod_NAME_Collector,
+                               Pod_Datetime_Collector)
 
 
 class Test_Metrics_Collector(unittest.TestCase):
@@ -277,6 +278,117 @@ class Test_Pod_Name_Collector(unittest.TestCase, Metric_Data):
         self.assertTrue(self.pod_collector.is_present(name_values[0]))
         self.assertFalse(self.pod_collector.is_present(name_values[1]))
         self.assertTrue(self.pod_collector.is_present(name_values[2]))
+
+
+class Test_Pod_Datetime_Collector(unittest.TestCase, Metric_Data):
+    """Test Class tests cls: Pod_Datetime_Collector()"""
+    METRICS_URL = ("http://localhost:8001/apis/metrics.k8s.io/"
+                   "v1beta1/namespaces/my-app-namespace/pods")
+
+    def setUp(self):
+        super().__init__()
+
+        # Initiation
+        mc = Metrics_Collector(self.METRICS_URL)
+        self.metrics = mc.get_metrics()
+
+        self.pod_collector = Pod_Datetime_Collector()
+
+    def test_extract(self):
+        """Test getting pod name and datetime values for the list
+        of pods."""
+
+        dt_values = self.pod_collector.extract(self.metrics)
+
+        # names of pods
+        li = ['my-app-56587895ff-smz8s',
+              'my-app-deployement-56587895ff-h8ltq',
+              'my-app-deployment-699c985fbf-sl69d']
+
+        # Assertions
+        for name, dt in dt_values:
+            self.assertIn(name, li)
+            self.assertTrue(str(name))
+            self.assertTrue(str(dt))
+
+    def test_add(self):
+        """Add test name to the set(): self.NAME"""
+        dt_values = self.pod_collector.extract(self.metrics)
+
+        for name, dt in dt_values:
+            self.pod_collector.add(name, dt)
+
+        # Assertion
+        for name, dt in dt_values:
+            self.assertIn(name, self.CREATION_DATETIME)
+            self.assertEqual(dt, self.CREATION_DATETIME.get(name))
+
+    def test_datetime_raise_pod_exists_exception(self):
+        """Test raising an exception if pod name already
+        exists in the self.NAME collection."""
+        dt_values = self.pod_collector.extract(self.metrics)
+
+        name, dt = dt_values[0]
+
+        # uncomment when running single test only
+        # this is because pod_names are present in
+        # dt_value after running previous tests.
+        # self.pod_collector.add(name, dt)
+
+        # Assertion
+        with self.assertRaises(AlreadyExistsError):
+            self.pod_collector.add(name, dt)
+
+    def test_isPresent(self):
+        """Test returning CPU value when with Pod name."""
+
+        dt_values = self.pod_collector.extract(self.metrics)
+
+        # uncomment when running single test only
+        # this is because pod_names are present in
+        # name_value after running previous tests.
+        # Adding pod name and cpu value to dict{}
+        # for name, dt in dt_values:
+        #     self.pod_collector.add(name, dt)
+
+        # Assertions
+        self.assertFalse(self.pod_collector.is_present('Sample_Pod'))
+
+        for name, dt in dt_values:
+            res = self.pod_collector.is_present(name)
+            self.assertTrue(res)
+
+    def test_get(self):
+        """Test retrieving Pod's datetime value"""
+        dt_values = self.pod_collector.extract(self.metrics)
+
+        # uncomment when running single test only
+        # this is because pod_names are present in
+        # name_value after running previous tests.
+        # for name, dt in dt_values:
+        #     self.pod_collector.add(name, dt)
+
+        # Assertions
+        for name, dt in dt_values:
+            res = self.pod_collector.get(name)
+            self.assertEqual(res, dt)
+
+    def test_remove(self):
+        """Test removing Pod name from dict(): CPU"""
+        dt_values = self.pod_collector.extract(self.metrics)
+
+        # uncomment when running single test only
+        # this is because pod_names are present in
+        # name_value after running previous tests.
+        # for name, dt in dt_values:
+        #     self.pod_collector.add(name, dt)
+
+        # Deleting the pod_name from collection
+        name, dt = dt_values[1]
+        self.pod_collector.remove(name)
+
+        # Assertions
+        self.assertFalse(self.pod_collector.is_present(name))
 
 
 if __name__ == '__main__':
