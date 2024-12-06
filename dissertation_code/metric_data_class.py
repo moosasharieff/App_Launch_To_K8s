@@ -10,6 +10,8 @@ import json
 import pytz
 from datetime import datetime
 
+from custom_exceptions import AlreadyExistsError
+
 
 class Metric_Data:
     """This class will store below information
@@ -79,7 +81,6 @@ class Pod_CPU_Collector(Metric_Data):
             raise KeyError(f"Pod name '{pod_name}' not found in CPU Storage.")
         return self.CPU.get(pod_name)
 
-
     def add(self, pod_name: str, cpu_val: int) -> None:
         """Add the collected pod name and cpu value to
         cls: Metric_Data()
@@ -88,3 +89,42 @@ class Pod_CPU_Collector(Metric_Data):
 
     def remove(self, pod_name: str) -> None:
         self.CPU.pop(pod_name)
+
+
+class Pod_NAME_Collector(Metric_Data):
+    """This method communicates with Metrics Service URL
+        and Inherited cls: Metric_Data to store values."""
+
+    def __init__(self):
+        super().__init__()
+
+    def extract(self, metrics: json) -> int:
+        """Collects all the Name value from Metrics of the pods from the provided
+        json response."""
+
+        n = len(metrics)
+        values = []
+
+        for i in range(n):
+            pod_metrics = metrics[i]
+            name = pod_metrics['metadata']['name']
+
+            values.append(name)
+
+        return values
+
+    def add(self, pod_name) -> None:
+        """Adds Pod names in memory"""
+        # raise AlreadyExistsError(f"{pod_name} is already present in collection.")
+        if pod_name in self.NAME:
+            raise AlreadyExistsError('')
+        self.NAME.add(pod_name)
+
+    def is_present(self, pod_name: str) -> bool:
+        """Checks Pod name and confirms if they are
+        present in memory or not."""
+        return pod_name in self.NAME
+
+    def remove(self, pod_name: str) -> None:
+        """Removes pods name from collection."""
+        return self.NAME.remove(pod_name)

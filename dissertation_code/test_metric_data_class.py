@@ -1,8 +1,9 @@
 import unittest
 from unittest import skip  # noqa
 
+from custom_exceptions import AlreadyExistsError
 from metric_data_class import (Metric_Data, Metrics_Collector,
-                               Pod_CPU_Collector)
+                               Pod_CPU_Collector, Pod_NAME_Collector)
 
 
 class Test_Metrics_Collector(unittest.TestCase):
@@ -72,7 +73,6 @@ class Test_Metric_Data(unittest.TestCase, Metric_Data):
         self.append_datetime_list('2024-12-05T21:58:50Z')
         self.append_datetime_list('2024-12-05T19:38:50Z')
         self.append_datetime_list('2024-12-05T23:35:50Z')
-
         li = ['2024-12-05T21:58:50Z',
               '2024-12-05T19:38:50Z',
               '2024-12-05T123:35:50Z']
@@ -150,7 +150,6 @@ class Test_Pod_CPU_Collector(unittest.TestCase, Metric_Data):
         with self.assertRaises(KeyError):
             self.pod_collector.get('testing_pod')
 
-
     def test_add(self):
         """Test adding the {pod_name:cpu_value}"""
 
@@ -186,6 +185,98 @@ class Test_Pod_CPU_Collector(unittest.TestCase, Metric_Data):
         for name, val in cpu_values:
             with self.assertRaises(KeyError):
                 self.CPU[name]
+
+
+class Test_Pod_Name_Collector(unittest.TestCase, Metric_Data):
+    """Test Class tests cls: Pod_Name_Collector()"""
+    METRICS_URL = ("http://localhost:8001/apis/metrics.k8s.io/"
+                   "v1beta1/namespaces/my-app-namespace/pods")
+
+    def setUp(self):
+        super().__init__()
+
+        # Initiation
+        mc = Metrics_Collector(self.METRICS_URL)
+        self.metrics = mc.get_metrics()
+
+        self.pod_collector = Pod_NAME_Collector()
+
+    def test_extract(self):
+        """Test getting pod name and cpu values for the list
+        of pods."""
+
+        name_values = self.pod_collector.extract(self.metrics)
+
+        # names of pods
+        li = ['my-app-56587895ff-smz8s',
+              'my-app-deployement-56587895ff-h8ltq',
+              'my-app-deployment-699c985fbf-sl69d']
+
+        # Assertions
+        for name in name_values:
+            self.assertIn(name, li)
+
+    def test_add(self):
+        """Add test name to the set(): self.NAME"""
+        name_values = self.pod_collector.extract(self.metrics)
+
+        for ele in name_values:
+            self.pod_collector.add(ele)
+
+        # Assertion
+        for name in name_values:
+            self.assertIn(name, self.NAME)
+
+    def test_add_raise_pod_exists_exception(self):
+        """Test raising an exception if pod name already
+        exists in the self.NAME collection."""
+        name_values = self.pod_collector.extract(self.metrics)
+
+        # uncomment when running single test only
+        # this is because pod_names are present in
+        # name_value after running previous tests.
+        # self.pod_collector.add(name_values[0])
+
+        # Assertion
+        with self.assertRaises(AlreadyExistsError):
+            self.pod_collector.add(name_values[0])
+
+    def test_isPresent(self):
+        """Test returning CPU value when with Pod name."""
+
+        name_values = self.pod_collector.extract(self.metrics)
+
+        # uncomment when running single test only
+        # this is because pod_names are present in
+        # name_value after running previous tests.
+        # Adding pod name and cpu value to dict{}
+        # for ele in name_values:
+        #     self.pod_collector.add(ele)
+
+        # Assertions
+        self.assertFalse(self.pod_collector.is_present('Sample_Pod'))
+
+        for name in name_values:
+            res = self.pod_collector.is_present(name)
+            self.assertTrue(res)
+
+    def test_remove(self):
+        """Test removing Pod name from dict(): CPU"""
+        name_values = self.pod_collector.extract(self.metrics)
+
+        # uncomment when running single test only
+        # this is because pod_names are present in
+        # name_value after running previous tests.
+        # for ele in name_values:
+        #     self.pod_collector.add(ele)
+
+        # Deleting the pod_name from collection
+        self.pod_collector.remove(name_values[1])
+
+        # Assertions
+        self.assertTrue(self.pod_collector.is_present(name_values[0]))
+        self.assertFalse(self.pod_collector.is_present(name_values[1]))
+        self.assertTrue(self.pod_collector.is_present(name_values[2]))
 
 
 if __name__ == '__main__':
