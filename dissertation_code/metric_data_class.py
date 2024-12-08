@@ -19,12 +19,6 @@ class Metric_Data:
     NAME = set()
     CPU = {}
     CREATION_DATETIME = {}
-    DATETIME_LIST = []
-
-    def append_datetime_list(self, dt):
-        val = self._convert_dub_datetime(dt)
-        self.DATETIME_LIST.append(val)
-        self.DATETIME_LIST.sort()
 
     def _convert_dub_datetime(self, dt):
         utc_time = datetime.strptime(dt, '%Y-%m-%dT%H:%M:%SZ')
@@ -76,7 +70,11 @@ class Pod_CPU_Collector(Metric_Data):
         return values
 
     def get(self, pod_name: str) -> str:
-        """Return CPU value for the pod name else raise KeyError."""
+        """
+        Return CPU value for the pod name else raise KeyError.
+        :param pod_name: Name of the pod.
+        :return: consumed microsecond core value of CPU for a Pod
+        """
         if pod_name not in self.CPU:
             raise KeyError(f"Pod name '{pod_name}' not found in CPU Storage.")
         return self.CPU.get(pod_name)
@@ -95,30 +93,42 @@ class Pod_NAME_Collector(Metric_Data):
     """This method communicates with Metrics Service URL
         and Inherited cls: Metric_Data to store values."""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, metrics):
+        """
+        Initiate cls: Metrics_Collector() to get json_response
+        of the pod metrics.
 
-    def extract(self, metrics: json) -> int:
-        """Collects all the Name value from Metrics
-        of the pods from the provided json response."""
+        :param metrics: JSON response of Pod's metrics.
+        """
+        super().__init__()
+        self._extract(metrics)
+
+    def _extract(self, metrics: json) -> bool:
+        """
+        Collects all the Name value from Metrics of the pods
+        from the provided json response.
+
+        :param metrics: Namespace URL of the Metrics Server
+        :return:
+        """
 
         n = len(metrics)
-        values = []
+        count = 0
 
         for i in range(n):
             pod_metrics = metrics[i]
             name = pod_metrics['metadata']['name']
 
-            values.append(name)
+            count += 1
+            self.NAME.add(name)
 
-        return values
+        return n == count
 
-    def add(self, pod_name) -> None:
-        """Adds Pod names in memory"""
-        if pod_name in self.NAME:
-            raise AlreadyExistsError(f"{pod_name} is already present "
-                                     f"in self.NAME collection.")
-        self.NAME.add(pod_name)
+    def get_all(self) -> set:
+        """
+        :return: Set of all pod names
+        """
+        return self.NAME
 
     def is_present(self, pod_name: str) -> bool:
         """Checks Pod name and confirms if they are
