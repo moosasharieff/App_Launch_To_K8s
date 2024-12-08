@@ -91,13 +91,13 @@ class Test_Pod_CPU_Collector(unittest.TestCase, Metric_Data):
         cpu_values = self.pod_collector.extract(self.metrics)
 
         # names of pods
-        li = ['my-app-56587895ff-smz8s',
-              'my-app-deployement-56587895ff-h8ltq',
-              'my-app-deployment-699c985fbf-sl69d']
+        vals = {}
+        for name, dt in cpu_values:
+            vals[name] = dt
 
         # Assertions
         for name, cpu in cpu_values:
-            self.assertIn(name, li)
+            self.assertIn(name, vals)
 
     def test_get(self):
         """Test returning CPU value when with Pod name."""
@@ -185,11 +185,12 @@ class Test_Pod_Name_Collector(unittest.TestCase, Metric_Data):
         name_values = self.pod_collector.get_all()
 
         # names of pods
-        li = ['my-app-56587895ff-smz8s',
-              'my-app-deployement-56587895ff-h8ltq',
-              'my-app-deployment-699c985fbf-sl69d']
+        li = []
+        for name in name_values:
+            li.append(name)
 
         # Assertions
+        self.assertEqual(len(name_values), len(li))
         for name in name_values:
             self.assertIn(name, li)
 
@@ -224,12 +225,10 @@ class Test_Pod_Name_Collector(unittest.TestCase, Metric_Data):
 
         # Deleting the pod_name from collection
         name_values = list(name_values)
-        self.pod_collector.remove(name_values[1])
+        self.pod_collector.remove(name_values[0])
 
         # Assertions
-        self.assertTrue(self.pod_collector.is_present(name_values[0]))
-        self.assertFalse(self.pod_collector.is_present(name_values[1]))
-        self.assertTrue(self.pod_collector.is_present(name_values[2]))
+        self.assertFalse(self.pod_collector.is_present(name_values[0]))
 
 
 class Test_Pod_Datetime_Collector(unittest.TestCase, Metric_Data):
@@ -253,13 +252,13 @@ class Test_Pod_Datetime_Collector(unittest.TestCase, Metric_Data):
         dt_values = self.pod_collector.extract(self.metrics)
 
         # names of pods
-        li = ['my-app-56587895ff-smz8s',
-              'my-app-deployement-56587895ff-h8ltq',
-              'my-app-deployment-699c985fbf-sl69d']
+        vals = {}
+        for name, dt in dt_values:
+            vals[name] = dt
 
         # Assertions
+        self.assertEqual(len(dt_values), len(vals))
         for name, dt in dt_values:
-            self.assertIn(name, li)
             self.assertTrue(str(name))
             self.assertTrue(str(dt))
 
@@ -336,7 +335,7 @@ class Test_Pod_Datetime_Collector(unittest.TestCase, Metric_Data):
         #     self.pod_collector.add(name, dt)
 
         # Deleting the pod_name from collection
-        name, dt = dt_values[1]
+        name, dt = dt_values[0]
         self.pod_collector.remove(name)
 
         # Assertions

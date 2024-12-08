@@ -130,6 +130,12 @@ class Pod_NAME_Collector(Metric_Data):
         """
         return self.NAME
 
+    def no_of_pods(self) -> int:
+        """
+        :return: No of pods
+        """
+        return len(self.NAME)
+
     def is_present(self, pod_name: str) -> bool:
         """Checks Pod name and confirms if they are
         present in memory or not."""
