@@ -32,8 +32,16 @@ class K8s_Controller:
                 return pod.metadata.namespace
         raise None  # Pod not found
 
-    def get_label(self):
-        pass
+    def get_labels(self, pod_name) -> Optional[str]:
+        """
+        :param pod_name: Name of the pod.
+        :return: Label of the pod or None if not found.
+        """
+        pods = self.core_v1.list_pod_for_all_namespaces()
+        for pod in pods.items:
+            if pod.metadata.name == pod_name:
+                return pod.metadata.labels
+        raise None  # Pod not found
 
     def deploy_pod(self):
         pass

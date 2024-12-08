@@ -56,9 +56,17 @@ class Test_K8s_Controller(unittest.TestCase,
         # Assertions
         self.assertEqual(namespace, 'my-app-namespace')
 
-    @skip('Implement later')
     def test_get_label(self):
-        pass
+        # Initiation
+        pod_names = self.pod_name_collector.get_all()
+        pod_names = list(pod_names)
+
+        # Test
+        labels = self.k8s_controller.get_labels(pod_names[0])
+        label = labels['run']
+
+        # Assertions
+        self.assertEqual(label, 'my-app')
 
     @skip('Implement later')
     def test_deploy_pod(self):
