@@ -1,5 +1,4 @@
 import unittest
-from unittest import skip
 from kubernetes import client
 
 from k8s_controller import K8s_Controller
@@ -56,21 +55,35 @@ class Test_K8s_Controller(unittest.TestCase,
         # Assertions
         self.assertEqual(namespace, 'my-app-namespace')
 
-    def test_get_label(self):
+    def test_get_deployment_name(self):
         # Initiation
         pod_names = self.pod_name_collector.get_all()
         pod_names = list(pod_names)
 
+        namespace = self.k8s_controller.get_namespace(pod_names[0])
+
         # Test
-        labels = self.k8s_controller.get_labels(pod_names[0])
-        label = labels['run']
+        deployment_name = self.k8s_controller.get_deployment_name(namespace)
 
         # Assertions
-        self.assertEqual(label, 'my-app')
+        self.assertEqual(deployment_name, 'my-app-deployment')
 
-    @skip('Implement later')
-    def test_deploy_pod(self):
-        pass
+    def test_scale_deployment(self):
+        # Initiation
+        pod_names = self.pod_name_collector.get_all()
+        pod_names = list(pod_names)
+
+        namespace = self.k8s_controller.get_namespace(pod_names[0])
+        deployment_name = self.k8s_controller.get_deployment_name(namespace)
+
+        # Test
+        replica_count = 3
+        response = self.k8s_controller.scale_deployment(namespace,
+                                                        deployment_name,
+                                                        replica_count)
+
+        # Assertions
+        self.assertEqual(replica_count, response.spec.replicas)
 
 
 if __name__ == '__main__':
