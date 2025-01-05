@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fast-api-deployment
+  namespace: fast-api-hpa-namespace
+  labels:
+    app: fast-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fast-api
+  template:
+    metadata:
+      labels:
+        app: fast-api
+    spec:
+      containers:
+      - name: fast-api
+        image: moosasharieff/app-launch-to-k8s:0.0.17
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 50m
+            memory: 25Mi
+          limits:
+            cpu: 100m
+            memory: 75Mi
+        env:
+          - name: ENV
+            value: "HPA"
